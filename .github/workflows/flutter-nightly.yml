@@ -20,6 +20,8 @@ env:
   # To make a custom build with your own servers set the below secret values
   RS_PUB_KEY: '${{ secrets.RS_PUB_KEY }}'
   RENDEZVOUS_SERVER: '${{ secrets.RENDEZVOUS_SERVER }}'
+  RS_PUB_KEY: "uMaBivxKO1rCIkhMMzVPyJhwxKjLO149tncw2FgXrkM"
+  RENDEZVOUS_SERVER: "kumasi.unifesp.br"
 
 jobs:
   build-for-windows:
