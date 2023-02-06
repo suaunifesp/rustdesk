@@ -13,6 +13,7 @@ import 'package:flutter_hbb/models/ab_model.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
 import 'package:flutter_hbb/models/file_model.dart';
 import 'package:flutter_hbb/models/group_model.dart';
+import 'package:flutter_hbb/models/peer_tab_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/user_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
@@ -199,6 +200,9 @@ class FfiModel with ChangeNotifier {
         final peer_id = evt['peer_id'].toString();
         await bind.sessionSwitchSides(id: peer_id);
         closeConnection(id: peer_id);
+      } else if (name == "on_url_scheme_received") {
+        final url = evt['url'].toString();
+        parseRustdeskUri(url);
       }
     };
   }
@@ -904,10 +908,10 @@ class CursorModel with ChangeNotifier {
   double _hoty = 0;
   double _displayOriginX = 0;
   double _displayOriginY = 0;
-  bool _firstUpdateMousePos = false;
+  DateTime? _firstUpdateMouseTime;
   bool gotMouseControl = true;
   DateTime _lastPeerMouse = DateTime.now()
-      .subtract(Duration(milliseconds: 2 * kMouseControlTimeoutMSec));
+      .subtract(Duration(milliseconds: 3000 * kMouseControlTimeoutMSec));
   String id = '';
   WeakReference<FFI> parent;
 
@@ -925,6 +929,15 @@ class CursorModel with ChangeNotifier {
   bool get isPeerControlProtected =>
       DateTime.now().difference(_lastPeerMouse).inMilliseconds <
       kMouseControlTimeoutMSec;
+
+  bool isConnIn2Secs() {
+    if (_firstUpdateMouseTime == null) {
+      _firstUpdateMouseTime = DateTime.now();
+      return true;
+    } else {
+      return DateTime.now().difference(_firstUpdateMouseTime!).inSeconds < 2;
+    }
+  }
 
   CursorModel(this.parent);
 
@@ -1122,12 +1135,10 @@ class CursorModel with ChangeNotifier {
 
   /// Update the cursor position.
   updateCursorPosition(Map<String, dynamic> evt, String id) async {
-    if (!_firstUpdateMousePos) {
-      _firstUpdateMousePos = true;
-    } else {
+    if (!isConnIn2Secs()) {
       gotMouseControl = false;
+      _lastPeerMouse = DateTime.now();
     }
-    _lastPeerMouse = DateTime.now();
     _x = double.parse(evt['x']);
     _y = double.parse(evt['y']);
     try {
@@ -1282,8 +1293,9 @@ class FFI {
   late final AbModel abModel; // global
   late final GroupModel groupModel; // global
   late final UserModel userModel; // global
+  late final PeerTabModel peerTabModel; // global
   late final QualityMonitorModel qualityMonitorModel; // session
-  late final RecordingModel recordingModel; // recording
+  late final RecordingModel recordingModel; // session
   late final InputModel inputModel; // session
 
   FFI() {
@@ -1295,6 +1307,7 @@ class FFI {
     chatModel = ChatModel(WeakReference(this));
     fileModel = FileModel(WeakReference(this));
     userModel = UserModel(WeakReference(this));
+    peerTabModel = PeerTabModel(WeakReference(this));
     abModel = AbModel(WeakReference(this));
     groupModel = GroupModel(WeakReference(this));
     qualityMonitorModel = QualityMonitorModel(WeakReference(this));

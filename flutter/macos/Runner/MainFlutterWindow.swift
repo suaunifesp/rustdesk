@@ -78,10 +78,12 @@ class MainFlutterWindow: NSWindow {
                     self.setWindowInterfaceMode(window: window,themeName: themeName ?? "light")
                     result(nil)
                     break;
+                case "terminate":
+                    NSApplication.shared.terminate(self)
+                    result(nil)
                 default:
                     result(FlutterMethodNotImplemented)
                 }
         })
     }
 }
-
